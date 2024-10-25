@@ -5,6 +5,8 @@ def terminal_interface():
     parser = argparse.ArgumentParser(description="Stock Analysis Tool")
     
     parser.add_argument('--date', type=str, help="Date as YYYYMMDD")
+    parser.add_argument('--period', type=str, help="Time period.  (e.g. 3m for 3 months)")
+
     parser.add_argument('--filepath', type=str)
     parser.add_argument('--h5-filepath', type=str)
     parser.add_argument('--pcap-filepath', type=str)

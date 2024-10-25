@@ -1,6 +1,6 @@
 from IEXTools import Parser, messages
 
-class MyParser(Parser):
+class TradeParser(Parser):
     def __init__(self, filepath):
         self.filter_tradereport = [messages.TradeReport]
         super().__init__(filepath)
@@ -9,8 +9,8 @@ class MyParser(Parser):
         return self.get_next_message(self.filter_tradereport)
 
 
-#parser = MyParser(filepath, message_filter)
-
-#def func(x):
+if __name__ == '__main__':
+    #parser = MyParser(filepath, message_filter)
+    #def func(x):
 #    for i in x:
 #        yield [ i.timestamp, i.symbol, i.size, i.price, i.trade_id ]

@@ -1,32 +1,60 @@
-import pandas as pd
-import concurrent.futures
 from datetime import datetime
+import pandas as pd
+import numpy as np
+import h5py
 
-# Optimized HDF5 file handler with parallel writing
-def write_to_hdf5_parallel(df, h5_filename, symbol):
-    """ Write symbol data to HDF5 file with optimized settings """
-    store = pd.HDFStore(h5_filename, mode='a', complevel=9, complib='blosc')
-    store.put(f'/tradedata/{symbol}', df, format='table', data_columns=True)
-    store.close()
+def get_single_date(symbol, date, datadir='/srv/b/h5'):
+    # Open a single HDF5 file and access the "symbol" group
+    with h5py.File('{}/{}.h5'.format(datadir, date), 'r') as hfile:
+        # Access the dataset for 'AAPL' inside the 'trades' group
+        aapl_data = hfile['trades'][f'{symbol}']
 
-def save_daily_trade_data(df_dict, date):
-    """ Saves all symbols' trade data for a single day to an HDF5 file """
-    h5_filename = f'DATADIR/h5/{date}.h5'
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = [executor.submit(write_to_hdf5_parallel, df, h5_filename, symbol) 
-                   for symbol, df in df_dict.items()]
-        concurrent.futures.wait(futures)
+        # Convert the dataset to a list of tuples
+        data = [tuple(row) for row in aapl_data]
 
-def load_hdf5_for_period(start_date, end_date):
-    """ Load multiple HDF5 files to satisfy period requirements """
-    hdf5_files = [f'DATADIR/h5/{date}.h5' for date in pd.date_range(start_date, end_date)]
-    combined_data = []
-    for h5_file in hdf5_files:
-        store = pd.HDFStore(h5_file, mode='r')
-        for symbol in store.keys():
-            combined_data.append(store[symbol])
-        store.close()
-    return pd.concat(combined_data)
+        # Convert the list of tuples into a DataFrame
+        df = pd.DataFrame([row[1:] for row in data], # elements after the first one for columns
+                          index=[row[0] for row in data],  # first element (timestamp) as the index
+                          columns=['symbol', 'size', 'price', 'trade_id'] # Specify column names
+                         )
+
+        df['symbol'] = df['symbol'].str.decode('utf-8')
+        return df
+
+def get_daterange(symbol):
+    files = [
+        '/srv/b/h5/20241007.h5',
+        '/srv/b/h5/20241008.h5',
+        '/srv/b/h5/20241009.h5',
+        '/srv/b/h5/20241010.h5',
+        '/srv/b/h5/20241011.h5']
+    
+    # Initialize an empty list to hold DataFrames
+    dfs = []
+    
+    # Loop through each file and extract the data for 'AAPL'
+    for file in files:
+        with h5py.File(file, 'r') as hfile:
+            symbol_data = hfile['trades'][f'{symbol}']
+            data = [tuple(row) for row in symbol_data]
+    
+            # Create a DataFrame for the current file's data
+            df = pd.DataFrame([row[1:] for row in data],
+                              index=[row[0] for row in data],
+                              columns=['symbol', 'size', 'price', 'trade_id']
+                             )
+            df['symbol'] = df['symbol'].str.decode('utf-8')
+            dfs.append(df)
+    
+    # Concatenate all the DataFrames from different files
+    final_df = pd.concat(dfs)
+    
+    # Sort the DataFrame by index (timestamp) if needed
+    final_df = final_df.sort_index()
+    final_df['ts'] = final_df.index.map(lambda x: datetime.fromtimestamp(x/1000000000))
+    
+    print(final_df)
+    return final_df
 
 def save_df_to_hdf5(df, date):
     with pd.HDFStore(f'{STOREDIR}/{date}.h5',
@@ -35,9 +63,6 @@ def save_df_to_hdf5(df, date):
                      complib='blosc') as store:
         for symbol in df['symbol'].unique():
             store.put(f'/trades/{symbol}', df[df['symbol'] == symbol])
-
-import h5py
-import numpy as np
 
 # Optimized HDF5 writer using h5py
 def trades_to_hdf5(tradeparser, h5filepath):
