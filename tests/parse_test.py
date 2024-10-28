@@ -1,15 +1,13 @@
-from stockanalysis.data.parse_data import get_parser
+import pytest
+from ta.data.parse_data import get_parser
 from datetime import datetime
 
-if __name__ == '__main__':
+pcap_test_filepath = ('/home/ggalvez/projects/ta/tests/data_test.pcap')
 
-    pcapfilepath = ('/home/ggalvez/data/historical/iex/pcap/'
-                    'data_feeds_20240617_20240617_IEXTP1_TOPS1.6.pcap.gz')
+def test_get_trades_from_pcap():
+    trades = get_parser(pcap_test_filepath)
+    for i, trade in enumerate(trades):
+        assert trade
 
-    trades = get_parser(pcapfilepath)
-
-    print(f'Starting {datetime.now()}')
-    for trade in trades:
-        trade
-    print(f'Done {datetime.now()}')
+    assert i == 5024 # should be 5025 trades (0 through 5024) total in data_test.pcap
 

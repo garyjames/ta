@@ -13,9 +13,13 @@ def get_single_date(symbol, date, datadir='/srv/b/h5'):
         data = [tuple(row) for row in aapl_data]
 
         # Convert the list of tuples into a DataFrame
-        df = pd.DataFrame([row[1:] for row in data], # elements after the first one for columns
-                          index=[row[0] for row in data],  # first element (timestamp) as the index
-                          columns=['symbol', 'size', 'price', 'trade_id'] # Specify column names
+
+        # elements after the first one for columns
+        df = pd.DataFrame([row[1:] for row in data],
+                          # first element (timestamp) as the index
+                          index=[row[0] for row in data],
+                          # Specify column names
+                          columns=['symbol', 'size', 'price', 'trade_id']
                          )
 
         df['symbol'] = df['symbol'].str.decode('utf-8')
@@ -56,6 +60,8 @@ def get_daterange(symbol):
     print(final_df)
     return final_df
 
+# TODO
+# Need to figure out the efficient way of saving h5 files
 def save_df_to_hdf5(df, date):
     with pd.HDFStore(f'{STOREDIR}/{date}.h5',
                      mode='w',
@@ -79,7 +85,9 @@ def trades_to_hdf5(tradeparser, h5filepath):
                                         ('symbol', 'S10'),
                                         ('size', 'i4'),
                                         ('price', 'f4'),
-                                        ('trade_id', 'i8')])
+                                        ('trade_id', 'i8')
+                                       ]
+                                )
                 current_size = dataset.shape[0]
                 dataset.resize(current_size + 1, axis=0)
                 dataset[current_size] = trade
@@ -97,3 +105,12 @@ def trades_to_hdf5(tradeparser, h5filepath):
                                    dtype=trade.dtype)
 
     print(f'Finished trades_to_hdf5: {datetime.now()}')
+
+def show_h5py_hdf5(filepath):
+    with h5py.File(filepath, 'r') as hfile:
+        hfile.visit(lambda x: print(x))
+
+def show_pd_hdf5(filepath):
+    with pd.HDFStore(filepath, 'r') as store:
+        for group, _, _ in store.walk():
+            print(group)

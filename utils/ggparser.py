@@ -7,10 +7,3 @@ class TradeParser(Parser):
 
     def __next__(self):
         return self.get_next_message(self.filter_tradereport)
-
-
-if __name__ == '__main__':
-    #parser = MyParser(filepath, message_filter)
-    #def func(x):
-#    for i in x:
-#        yield [ i.timestamp, i.symbol, i.size, i.price, i.trade_id ]
