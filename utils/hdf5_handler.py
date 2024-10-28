@@ -25,8 +25,8 @@ def get_single_date(symbol, date, datadir='/srv/b/h5'):
         df['symbol'] = df['symbol'].str.decode('utf-8')
         return df
 
-def get_daterange(symbol):
-    files = [
+def get_daterange(start,end):
+    test_files = [
         '/srv/b/h5/20241007.h5',
         '/srv/b/h5/20241008.h5',
         '/srv/b/h5/20241009.h5',
