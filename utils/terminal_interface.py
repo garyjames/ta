@@ -9,6 +9,7 @@ def terminal_interface():
 
 
     parser.add_argument('--filepath', type=str)
+    parser.add_argument('--batch-size', type=int)
     parser.add_argument('--h5-filepath', type=str)
     parser.add_argument('--pcap-filepath', type=str)
 

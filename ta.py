@@ -15,11 +15,15 @@ def generate_date_range(start_date: str, end_date: str) -> List[str]:
     """Generate a list of date strings between start_date and end_date."""
     start = datetime.strptime(start_date, "%Y-%m-%d")
     end = datetime.strptime(end_date, "%Y-%m-%d")
-    dates = [(start + timedelta(days=i)).strftime("%Y%m%d") for i in range((end - start).days + 1)]
+    g = [(start + timedelta(days=i)).strftime("%Y%m%d") for i in range((end - start).days + 1)]
+    dates = list(g)
     return dates
 
 # Function to load tick data from multiple HDF5 files in date range
-def load_tick_data(symbol: str, start_date: str, end_date: str, file_path_template: str) -> pd.DataFrame:
+def load_tick_data(symbol: str,
+                   start_date: str,
+                   end_date: str,
+                   file_path_template: str) -> pd.DataFrame:
     """
     Load tick data for a symbol across multiple HDF5 files within a specific date range.
     
@@ -43,7 +47,8 @@ def load_tick_data(symbol: str, start_date: str, end_date: str, file_path_templa
                 if group_path in f:
                     symbol_data = f[group_path]
                     df = pd.DataFrame({
-                        'timestamp': symbol_data['timestamp'][:],
+                        #'timestamp': symbol_data['timestamp'][:],
+                        'timestamp': symbol_data['ts'][:],
                         'price': symbol_data['price'][:],
                         'size': symbol_data['size'][:],
                         'trade_id': symbol_data['trade_id'][:]
@@ -110,20 +115,23 @@ def plot_macd(data: pd.DataFrame, macd_line: np.ndarray, signal_line: np.ndarray
     plt.tight_layout()
     plt.show()
 
-# Example Usage
-file_path_template = '/path/to/data/{}.h5'  # Placeholder path to HDF5 files with date formatting
-symbol = 'AAPL'
-start_date = '2022-01-01'
-end_date = '2022-01-10'
 
-# Load data and calculate MACD
-tick_data = load_tick_data(symbol, start_date, end_date, file_path_template)
-if not tick_data.empty:
-    macd_line, signal_line, _ = calculate_macd(tick_data['price'].values)
-    conditions = find_macd_conditions(macd_line, signal_line)
-
-    # Plot the MACD and conditions
-    plot_macd(tick_data, macd_line, signal_line, conditions)
-else:
-    print(f"No data available for symbol {symbol} in the given date range.")
+if __name__ == '__main__':
+    # Example Usage
+    file_path_template = '/srv/b/h5/{}.h5'  # HDF5 files placeholder path with date formatting
+    symbol = 'NVDA'
+    start_date = '2024-10-07'
+    end_date = '2024-10-18'
+    
+    # Load data and calculate MACD
+    tick_data = load_tick_data(symbol, start_date, end_date, file_path_template)
+    if tick_data.empty:
+        print(f"No data available for symbol {symbol} in the given date range.")
+    else:
+        macd_line, signal_line, _ = calculate_macd(tick_data['price'].values)
+        conditions = find_macd_conditions(macd_line, signal_line)
+    
+        # Plot the MACD and conditions
+        plot_macd(tick_data, macd_line, signal_line, conditions)
+        print(f"No data available for symbol {symbol} in the given date range.")
 

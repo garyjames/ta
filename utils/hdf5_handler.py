@@ -1,4 +1,5 @@
 from datetime import datetime
+from collections import defaultdict
 import pandas as pd
 import numpy as np
 import h5py
@@ -60,51 +61,61 @@ def get_daterange(start,end):
     print(final_df)
     return final_df
 
-# TODO
-# Need to figure out the efficient way of saving h5 files
-def save_df_to_hdf5(df, date):
-    with pd.HDFStore(f'{STOREDIR}/{date}.h5',
-                     mode='w',
-                     complevel=9,
-                     complib='blosc') as store:
-        for symbol in df['symbol'].unique():
-            store.put(f'/trades/{symbol}', df[df['symbol'] == symbol])
 
-# Optimized HDF5 writer using h5py
-def trades_to_hdf5(tradeparser, h5filepath):
+# Optimized HDF5 writer with batch writes
+def trades_to_hdf5(tradeparser, h5filepath, batch_size=1000):
     print(f'Starting trades_to_hdf5: {datetime.now()}')
+
+    # Buffer to hold trades for each symbol before batch write
+    trade_buffers = defaultdict(list)
+
     with h5py.File(h5filepath, 'a') as h5f:
         for trade in tradeparser:
             ts, symbol, size, price, trade_id = trade
             symbol_group = f'/trades/{symbol}'
-            if symbol_group in h5f:
-                # Group exists, append to the dataset
-                dataset = h5f[symbol_group]
-                trade = np.array([(ts, symbol, size, price, trade_id)],
-                                 dtype=[('ts', 'i8'),
-                                        ('symbol', 'S10'),
-                                        ('size', 'i4'),
-                                        ('price', 'f4'),
-                                        ('trade_id', 'i8')
-                                       ]
-                                )
-                current_size = dataset.shape[0]
-                dataset.resize(current_size + 1, axis=0)
-                dataset[current_size] = trade
-            else:
-                # Group does not exist, create it
-                trade = np.array([(ts, symbol, size, price, trade_id)],
-                                    dtype=[('ts', 'i8'),
-                                           ('symbol', 'S10'),
-                                           ('size', 'i4'),
-                                           ('price', 'f4'),
-                                           ('trade_id', 'i8')])
-                h5f.create_dataset(symbol_group,
-                                   data=trade,
-                                   maxshape=(None,),
-                                   dtype=trade.dtype)
+
+            # Append trade to the buffer for the symbol
+            trade_buffers[symbol_group].append((ts, symbol, size, price, trade_id))
+
+            # If buffer reaches batch size, write to HDF5
+            if len(trade_buffers[symbol_group]) >= batch_size:
+                write_trades_to_dataset(h5f, symbol_group, trade_buffers[symbol_group])
+                trade_buffers[symbol_group].clear()  # Clear buffer after writing
+
+        # Write any remaining data in the buffer to HDF5
+        for symbol_group, trades in trade_buffers.items():
+            if trades:  # Only write if buffer is not empty
+                write_trades_to_dataset(h5f, symbol_group, trades)
 
     print(f'Finished trades_to_hdf5: {datetime.now()}')
+
+def write_trades_to_dataset(h5f, symbol_group, trades):
+    """
+    Helper function to write a batch of trades to HDF5 dataset.
+    """
+    # Convert trades to structured NumPy array
+    trade_array = np.array(trades, dtype=[
+        ('ts', 'i8'),
+        ('symbol', 'S10'),
+        ('size', 'i4'),
+        ('price', 'f4'),
+        ('trade_id', 'i8')
+    ])
+
+    if symbol_group in h5f:
+        # Dataset exists, append data
+        dataset = h5f[symbol_group]
+        current_size = dataset.shape[0]
+        dataset.resize(current_size + trade_array.shape[0], axis=0)
+        dataset[current_size:] = trade_array
+    else:
+        # Create dataset if it does not exist
+        h5f.create_dataset(
+            symbol_group,
+            data=trade_array,
+            maxshape=(None,),
+            dtype=trade_array.dtype
+        )
 
 def show_h5py_hdf5(filepath):
     with h5py.File(filepath, 'r') as hfile:

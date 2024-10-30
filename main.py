@@ -7,6 +7,7 @@ from utils.hdf5_handler import (get_single_date,
                                 get_daterange,
                                 save_df_to_hdf5,
                                 trades_to_hdf5,
+                                write_trades_to_dataset,
                                 show_h5py_hdf5,
                                 show_pd_hdf5)
 
@@ -16,7 +17,7 @@ def main():
     # Handle save command
     if args.save_to_hdf5:
         trades = iter_trades(get_parser(args.pcap_filepath))
-        trades_to_hdf5(trades, args.h5_filepath)
+        trades_to_hdf5(trades, args.h5_filepath, batch_size=args.batch_size)
 
     elif args.show_h5py_hdf5:
         show_h5py_hdf5(args.filepath)
