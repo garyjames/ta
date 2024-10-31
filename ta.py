@@ -76,7 +76,9 @@ def calculate_macd(data: np.ndarray,
                    short_period: int = DEFAULT_SHORT_PERIOD,
                    long_period: int = DEFAULT_LONG_PERIOD,
                    signal_period: int = DEFAULT_SIGNAL_PERIOD,
-                   decay_factor: Optional[float] = None) -> Tuple[np.ndarray,np.ndarray,np.ndarray]:
+                   decay_factor: Optional[float] = None) -> Tuple[np.ndarray,
+                                                                  np.ndarray,
+                                                                  np.ndarray]:
     """Calculate MACD line, Signal line, and MACD histogram."""
     short_ema = ewma(data, short_period, decay_factor)
     long_ema = ewma(data, long_period, decay_factor)
