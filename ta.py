@@ -72,9 +72,11 @@ def ewma(data: np.ndarray, period: int, decay_factor: Optional[float] = None) ->
     return ewma_data
 
 # MACD Calculation
-def calculate_macd(data: np.ndarray, short_period: int = DEFAULT_SHORT_PERIOD, 
-                   long_period: int = DEFAULT_LONG_PERIOD, signal_period: int = DEFAULT_SIGNAL_PERIOD,
-                   decay_factor: Optional[float] = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def calculate_macd(data: np.ndarray,
+                   short_period: int = DEFAULT_SHORT_PERIOD,
+                   long_period: int = DEFAULT_LONG_PERIOD,
+                   signal_period: int = DEFAULT_SIGNAL_PERIOD,
+                   decay_factor: Optional[float] = None) -> Tuple[np.ndarray,np.ndarray,np.ndarray]:
     """Calculate MACD line, Signal line, and MACD histogram."""
     short_ema = ewma(data, short_period, decay_factor)
     long_ema = ewma(data, long_period, decay_factor)
@@ -95,7 +97,10 @@ def find_macd_conditions(macd_line: np.ndarray, signal_line: np.ndarray) -> List
     return conditions
 
 # Visualization
-def plot_macd(data: pd.DataFrame, macd_line: np.ndarray, signal_line: np.ndarray, conditions: List[int]):
+def plot_macd(data: pd.DataFrame,
+              macd_line: np.ndarray,
+              signal_line: np.ndarray,
+              conditions: List[int]):
     """Plot price and MACD with markers for specified conditions."""
     plt.figure(figsize=(14, 8))
     
@@ -109,7 +114,11 @@ def plot_macd(data: pd.DataFrame, macd_line: np.ndarray, signal_line: np.ndarray
     plt.subplot(2, 1, 2)
     plt.plot(data['timestamp'], macd_line, label='MACD Line')
     plt.plot(data['timestamp'], signal_line, label='Signal Line')
-    plt.scatter(data['timestamp'].iloc[conditions], macd_line[conditions], color='red', label='Conditions', marker='x')
+    plt.scatter(data['timestamp'].iloc[conditions],
+                macd_line[conditions],
+                color='red',
+                label='Conditions',
+                marker='x')
     plt.legend()
     
     plt.tight_layout()
@@ -117,14 +126,16 @@ def plot_macd(data: pd.DataFrame, macd_line: np.ndarray, signal_line: np.ndarray
 
 
 if __name__ == '__main__':
-    # Example Usage
-    file_path_template = '/srv/b/h5/{}.h5'  # HDF5 files placeholder path with date formatting
-    symbol = 'NVDA'
-    start_date = '2024-10-07'
-    end_date = '2024-10-18'
-    
+    import argparse
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument('--start-date', type=str, default='2024-10-07', help='YYYY-MM-DD')
+    argparser.add_argument('--end-date', type=str, default='2024-10-18', help='YYYY-MM-DD')
+    argparser.add_argument('--symbol', type=str, default='CRMD')
+    argparser.add_argument('--file-path-template', type=str, default='/srv/b/h5/{}.h5')
+    args = argparser.parse_args()
+
     # Load data and calculate MACD
-    tick_data = load_tick_data(symbol, start_date, end_date, file_path_template)
+    tick_data = load_tick_data(args.symbol, args.start_date, args.end_date, args.file_path_template)
     if tick_data.empty:
         print(f"No data available for symbol {symbol} in the given date range.")
     else:
